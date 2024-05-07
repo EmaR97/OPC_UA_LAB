@@ -1,12 +1,10 @@
+const port = 4334;
+
 const opcua = require("node-opcua");
 
 const userManager = {
     isValidUser: function (userName, password) {
-        if (userName === "user1" && password === "pas1") {
-            return true;
-        }
-        return userName === "user2" && password === "pas2";
-
+        return userName === "user2" && password === "pas2" || userName === "user1" && password === "pas1";
     }, getUserRoles: function (username) {
         if (username === "user1") {
             return opcua.makeRoles("AuthenticatedUser;Observer;Operator");
@@ -22,7 +20,7 @@ const userManager = {
     try {
         // Step 1: Create and initialize the OPC UA server
         const server = new opcua.OPCUAServer({
-            port: 4334, userManager, allowAnonymous: false, resourcePath: "/UA/MyLittleServer",
+            port: port, userManager, allowAnonymous: false, resourcePath: "/UA/MyLittleServer",
         });
 
         await server.initialize();
@@ -75,7 +73,7 @@ const userManager = {
         });
 
         // Step 6: Add variables and properties to TemperatureSensorType
-         namespace.addVariable({
+        namespace.addVariable({
             componentOf: TemperatureSensorType,
             browseName: "Temperature",
             dataType: opcua.DataType.Double,
@@ -90,7 +88,7 @@ const userManager = {
         });
 
         // Step 7: Add TemperatureSensor to BoilerDrum
-       namespace.addObject({
+        namespace.addObject({
             browseName: "TemperatureSensor",
             componentOf: BoilerDrum,
             typeDefinition: TemperatureSensorType,
@@ -112,7 +110,7 @@ const userManager = {
                 });
             },
         };
-        BoilerInstance.boilerDrum.temperatureSensor.temperature.bindVariable(randomTemperature,true);
+        BoilerInstance.boilerDrum.temperatureSensor.temperature.bindVariable(randomTemperature, true);
 
         // Step 10: Start the server
         await server.start();
