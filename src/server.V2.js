@@ -31,21 +31,27 @@ const userManager = {
 
         // Step 3: Define custom object types
         const BoilerType = namespace.addObjectType({browseName: "BoilerType"});
+        const PipeType = namespace.addObjectType({
+                browseName: "PipeType", subtypeOf:  "FolderType"
+        });
         const TemperatureSensorType = namespace.addObjectType({browseName: "TemperatureSensorType"});
 
+
+        // Step 5: Add variables to the pipes
+        namespace.addVariable({
+            organizedBy: PipeType, browseName: "Valve", dataType: opcua.DataType.Double, modellingRule: "Mandatory",
+        });
+
+        namespace.addVariable({
+            organizedBy: PipeType, browseName: "Size", dataType: opcua.DataType.String, modellingRule: "Mandatory",
+        });
         // Step 4: Add mandatory components to BoilerType
         const InputPipe = namespace.addObject({
-            browseName: "InputPipe",
-            componentOf: BoilerType,
-            typeDefinition: opcua.ObjectTypeIds.FolderType,
-            modellingRule: "Mandatory",
+            browseName: "InputPipe", componentOf: BoilerType, typeDefinition: PipeType, modellingRule: "Mandatory",
         });
 
         const OutputPipe = namespace.addObject({
-            browseName: "OutputPipe",
-            componentOf: BoilerType,
-            typeDefinition: opcua.ObjectTypeIds.FolderType,
-            modellingRule: "Mandatory",
+            browseName: "OutputPipe", componentOf: BoilerType, typeDefinition: PipeType, modellingRule: "Mandatory",
         });
 
         const BoilerDrum = namespace.addObject({
@@ -55,22 +61,6 @@ const userManager = {
             modellingRule: "Mandatory",
         });
 
-        // Step 5: Add variables to the pipes
-        namespace.addVariable({
-            organizedBy: InputPipe, browseName: "Valve", dataType: opcua.DataType.Double, modellingRule: "Mandatory",
-        });
-
-        namespace.addVariable({
-            propertyOf: InputPipe, browseName: "Size", dataType: opcua.DataType.String, modellingRule: "Mandatory",
-        });
-
-        namespace.addVariable({
-            componentOf: OutputPipe, browseName: "Valve", dataType: opcua.DataType.Double, modellingRule: "Mandatory",
-        });
-
-        namespace.addVariable({
-            propertyOf: OutputPipe, browseName: "Size", dataType: opcua.DataType.String, modellingRule: "Mandatory",
-        });
 
         // Step 6: Add variables and properties to TemperatureSensorType
         namespace.addVariable({
