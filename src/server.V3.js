@@ -52,6 +52,7 @@ const responseTemplate = {
     }
 };
 
+const timeoutApi = 120000;
 (async () => {
     try {
         const server = new OPCUAServer({
@@ -97,74 +98,39 @@ const responseTemplate = {
         const meteoInstance = meteoType.instantiate({browseName: "Meteo", organizedBy: devicesFolder});
 
         let lastCallTimestamp = 0;
-        let response = {
-            data: {
-                location: {
-                    name: "Boston",
-                    region: "Lincolnshire",
-                    country: "United Kingdom",
-                    lat: 53.1,
-                    lon: -0.13,
-                    tz_id: "Europe/London",
-                    localtime_epoch: 1715595152,
-                    localtime: "2024-05-13 11:12"
-                }, current: {
-                    last_updated_epoch: 1715594400,
-                    last_updated: "2024-05-13 11:00",
-                    temp_c: 17,
-                    temp_f: 62.6,
-                    is_day: 1,
-                    condition: {
-                        text: "Partly cloudy", icon: "//cdn.weatherapi.com/weather/64x64/day/116.png", code: 1003
-                    },
-                    wind_mph: 11.9,
-                    wind_kph: 19.1,
-                    wind_degree: 180,
-                    wind_dir: "S",
-                    pressure_mb: 1007,
-                    pressure_in: 29.74,
-                    precip_mm: 0,
-                    precip_in: 0,
-                    humidity: 72,
-                    cloud: 25,
-                    feelslike_c: 17,
-                    feelslike_f: 62.6,
-                    vis_km: 10,
-                    vis_miles: 6,
-                    uv: 5,
-                    gust_mph: 15.9,
-                    gust_kph: 25.7
-                }
-            }
-        };
+        let data = null
 
         async function fetchWeatherData() {
-            if (Date.now() - lastCallTimestamp > 120000) {
+            if (Date.now() - lastCallTimestamp > timeoutApi) {
                 try {
-                    response = await axios.request(requestOptions);
+                    data = (await axios.request(requestOptions)).data;
                 } catch (error) {
                     console.error('Error fetching weather data:', error);
                 } finally {
                     lastCallTimestamp = Date.now();
                 }
             }
-            return response;
+            return data;
         }
 
         await fetchWeatherData()
 
         function getNestedValue(object, key) {
+            if (object === null) {
+                return undefined;
+            }
             return key.split('.').reduce((o, i) => (o ? o[i] : undefined), object);
         }
+
 
         function bindVariable(key, object) {
             const element = getNestedValue(object, key);
             const binding = {
                 refreshFunc: async function (callback) {
-                    const response = await fetchWeatherData();
+                    const data = await fetchWeatherData();
                     const dataValue = new opcua.DataValue({
                         value: new opcua.Variant({
-                            dataType: element.dataType.value, value: getNestedValue(response.data, key)
+                            dataType: element.dataType.value, value: getNestedValue(data, key)
                         }), sourceTimestamp: new Date()
                     });
                     callback(null, dataValue);
