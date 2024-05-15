@@ -3,10 +3,7 @@ const {OPCUAServer, DataType, ObjectTypeIds} = opcua;
 const axios = require('axios');
 
 const requestOptions = {
-    method: 'GET',
-    url: 'https://weatherapi-com.p.rapidapi.com/current.json',
-    params: { q: '53.1,-0.13' },
-    headers: {
+    method: 'GET', url: 'https://weatherapi-com.p.rapidapi.com/current.json', params: {q: '53.1,-0.13'}, headers: {
         'X-RapidAPI-Key': '62d461ff03msh9fdcf142d22bbe3p1d265bjsnb2b490e6c8f2',
         'X-RapidAPI-Host': 'weatherapi-com.p.rapidapi.com'
     }
@@ -96,16 +93,8 @@ const responseTemplate = {
 
         processTemplate(meteoType, responseTemplate.MeteoDataType);
 
-        const devicesFolder = namespace.addFolder("ObjectsFolder", { browseName: "Devices" });
-        const meteoInstance = meteoType.instantiate({ browseName: "Meteo", organizedBy: devicesFolder });
-
-        async function fetchWeatherData() {
-            // if (Date.now() - lastCallTimestamp > 120000) {
-            //     response = await axios.request(requestOptions);
-            //     lastCallTimestamp = Date.now();
-            // }
-            return response;
-        }
+        const devicesFolder = namespace.addFolder("ObjectsFolder", {browseName: "Devices"});
+        const meteoInstance = meteoType.instantiate({browseName: "Meteo", organizedBy: devicesFolder});
 
         let lastCallTimestamp = 0;
         let response = {
@@ -119,17 +108,14 @@ const responseTemplate = {
                     tz_id: "Europe/London",
                     localtime_epoch: 1715595152,
                     localtime: "2024-05-13 11:12"
-                },
-                current: {
+                }, current: {
                     last_updated_epoch: 1715594400,
                     last_updated: "2024-05-13 11:00",
                     temp_c: 17,
                     temp_f: 62.6,
                     is_day: 1,
                     condition: {
-                        text: "Partly cloudy",
-                        icon: "//cdn.weatherapi.com/weather/64x64/day/116.png",
-                        code: 1003
+                        text: "Partly cloudy", icon: "//cdn.weatherapi.com/weather/64x64/day/116.png", code: 1003
                     },
                     wind_mph: 11.9,
                     wind_kph: 19.1,
@@ -152,6 +138,21 @@ const responseTemplate = {
             }
         };
 
+        async function fetchWeatherData() {
+            if (Date.now() - lastCallTimestamp > 120000) {
+                try {
+                    response = await axios.request(requestOptions);
+                } catch (error) {
+                    console.error('Error fetching weather data:', error);
+                } finally {
+                    lastCallTimestamp = Date.now();
+                }
+            }
+            return response;
+        }
+
+        await fetchWeatherData()
+
         function getNestedValue(object, key) {
             return key.split('.').reduce((o, i) => (o ? o[i] : undefined), object);
         }
@@ -163,10 +164,8 @@ const responseTemplate = {
                     const response = await fetchWeatherData();
                     const dataValue = new opcua.DataValue({
                         value: new opcua.Variant({
-                            dataType: element.dataType.value,
-                            value: getNestedValue(response.data, key)
-                        }),
-                        sourceTimestamp: new Date()
+                            dataType: element.dataType.value, value: getNestedValue(response.data, key)
+                        }), sourceTimestamp: new Date()
                     });
                     callback(null, dataValue);
                 }
