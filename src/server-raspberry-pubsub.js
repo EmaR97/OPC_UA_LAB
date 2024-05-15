@@ -52,7 +52,7 @@ const {installPubSub} = require("node-opcua-pubsub-server");
 
         var optionBind = {
             refreshFunc: function (callback) {
-                const value=5
+                const value = 5
                 console.log(value);
                 let dataValue = new opcua.DataValue({
                     value: new opcua.Variant({dataType: opcua.DataType.Double, value: value}),
@@ -66,12 +66,13 @@ const {installPubSub} = require("node-opcua-pubsub-server");
         temperatureSensor.temperature.bindVariable(optionBind, true);
 
 
-        console.log(temperatureSensor.temperature)
+        // console.log(temperatureSensor.temperature)
 
 
         //"enable pub-sub service"
-        const configuration = getPubSubConfiguration(temperatureSensor.temperature.nodeId);
+        const configuration = getPubSubConfiguration(temperatureSensor,[ 'temperature']);
         //
+        // console.log(configuration)
         await installPubSub(server, {
             configuration,
         });
@@ -86,13 +87,13 @@ const {installPubSub} = require("node-opcua-pubsub-server");
     }
 })();
 
-function getPubSubConfiguration(nodeid) {
+function getPubSubConfiguration(node, keys) {
 
     //_"create the connection"
     const connection = createConnection();
-
+    // console.log(connection)
     //_"create the published dataset";
-    const publishedDataSet = createPublishedDataSet(nodeid);
+    const publishedDataSet = createPublishedDataSet(node,keys);
 
     return new PubSubConfigurationDataType({
         connections: [connection], publishedDataSets: [publishedDataSet]
@@ -101,7 +102,7 @@ function getPubSubConfiguration(nodeid) {
 
 function createConnection() {
 
-    const mqttEndpoint = "mqtt:mqtt-dashboard.com:8884";
+    const mqttEndpoint = "mqtt:localhost:1883";
 
     //"create the writer group";
     //"create the dataset writer"
@@ -115,7 +116,7 @@ function createConnection() {
             dataSetMessageContentMask: JsonDataSetMessageContentMask.DataSetWriterId | JsonDataSetMessageContentMask.MetaDataVersion,
         },
         transportSettings: {
-            queueName: "stervfive-opcua-demo/json/data/temperature-sensor1",
+            queueName: "test/topic",
         },
     };
 
@@ -140,21 +141,36 @@ function createConnection() {
     return connection;
 }
 
-
-function createPublishedDataSet(nodeid) {
-    const publishedDataSet = {
-        name: "PublishedDataSet1", dataSetMetaData: {
-            fields: [{
-                name: "Sensor.Temperature", builtInType: DataType.Double, dataType: resolveNodeId("Double"),
-            },],
-        }, dataSetSource: new PublishedDataItemsDataType({
-            publishedData: [{
-                attributeId: AttributeIds.Value, samplingIntervalHint: 7000, publishedVariable: nodeid,
-            },],
-        }),
-    };
-    return publishedDataSet;
+function getNestedValue(object, key) {
+    if (object === null) {
+        return undefined;
+    }
+    return key.split('.').reduce((o, i) => (o ? o[i] : undefined), object);
 }
+function createPublishedDataSet(node, keys) {
+    const fields = keys.map(key => {
+        const nodeElement = getNestedValue(node, key);
+        return {
+            name: key,
+            builtInType: DataType[nodeElement.dataType.toString()],
+            dataType: resolveNodeId(nodeElement.dataType.toString()),
+        };
+    });
+    const publishedData = keys.map(key => {
+        const nodeElement = getNestedValue(node, key);
+        return {
+            attributeId: AttributeIds.Value,
+            samplingIntervalHint: 7000,
+            publishedVariable: nodeElement.nodeId,
+        };
+    });
+    return {
+        name: "PublishedDataSet1",
+        dataSetMetaData: { fields },
+        dataSetSource: new PublishedDataItemsDataType({ publishedData }),
+    };
+}
+
 
 
 
