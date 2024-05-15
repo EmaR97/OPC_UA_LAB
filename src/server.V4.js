@@ -1,3 +1,4 @@
+// Import required libraries and modules
 const opcua = require("node-opcua");
 const {OPCUAServer, DataType, ObjectTypeIds} = opcua;
 const axios = require('axios');
@@ -13,6 +14,7 @@ const {MyMqttJsonPubSubConnectionDataType, Transport} = require("node-opcua-pubs
 const {resolveNodeId, AttributeIds} = require("node-opcua");
 const {installPubSub} = require("node-opcua-pubsub-server");
 
+// Configuration for fetching weather data
 const requestOptions = {
     method: 'GET', url: 'https://weatherapi-com.p.rapidapi.com/current.json', params: {q: '53.1,-0.13'}, headers: {
         'X-RapidAPI-Key': '62d461ff03msh9fdcf142d22bbe3p1d265bjsnb2b490e6c8f2',
@@ -20,6 +22,7 @@ const requestOptions = {
     }
 };
 
+// Template for the expected response from the weather API
 const responseTemplate = {
     "MeteoDataType": {
         "location": {
@@ -63,21 +66,28 @@ const responseTemplate = {
     }
 };
 
+// Timeout for API call
 const timeoutApi = 120000;
+
+// Main function
 (async () => {
     try {
+        // Create OPC UA server
         const server = new OPCUAServer({
             port: 26543, resourcePath: "/UA/RaspberryServer", buildInfo: {
                 productName: "RaspberryOpcUAServer", buildDate: new Date(),
             }
         });
 
+        // Initialize server
         await server.initialize();
         const addressSpace = server.engine.addressSpace;
         const namespace = addressSpace.getOwnNamespace();
 
+        // Define MeteoType object type
         const meteoType = namespace.addObjectType({browseName: "MeteoType"});
 
+        // Function to add variable to object
         function addVariable(folder, browseName, dataType, typeDefinition) {
             namespace.addVariable({
                 browseName,
@@ -87,6 +97,7 @@ const timeoutApi = 120000;
             });
         }
 
+        // Function to process response template and add variables
         function processTemplate(folder, template) {
             for (const [key, value] of Object.entries(template)) {
                 if (Array.isArray(value)) {
@@ -103,14 +114,18 @@ const timeoutApi = 120000;
             }
         }
 
+        // Process response template to create variables
         processTemplate(meteoType, responseTemplate.MeteoDataType);
 
+        // Create folder for devices
         const devicesFolder = namespace.addFolder("ObjectsFolder", {browseName: "Devices"});
         const meteoInstance = meteoType.instantiate({browseName: "Meteo", organizedBy: devicesFolder});
 
+        // Variables to store last API call timestamp and data
         let lastCallTimestamp = 0;
-        let data = null
+        let data = null;
 
+        // Function to fetch weather data from API
         async function fetchWeatherData() {
             if (Date.now() - lastCallTimestamp > timeoutApi) {
                 try {
@@ -124,8 +139,10 @@ const timeoutApi = 120000;
             return data;
         }
 
-        await fetchWeatherData()
+        // Fetch weather data initially
+        await fetchWeatherData();
 
+        // Function to retrieve nested value from object using dot notation
         function getNestedValue(object, key) {
             if (object === null) {
                 return undefined;
@@ -133,7 +150,7 @@ const timeoutApi = 120000;
             return key.split('.').reduce((o, i) => (o ? o[i] : undefined), object);
         }
 
-
+        // Function to bind variable to fetched weather data
         function bindVariable(key, object) {
             const element = getNestedValue(object, key);
             const binding = {
@@ -150,6 +167,7 @@ const timeoutApi = 120000;
             element.bindVariable(binding, true);
         }
 
+        // Function to extract all keys from response template
         function extractAllKeys(obj, parentKey = '', result = []) {
             for (let key in obj) {
                 if (obj.hasOwnProperty(key)) {
@@ -164,15 +182,15 @@ const timeoutApi = 120000;
             return result;
         }
 
+        // Extract all keys from response template
         let allKeys = extractAllKeys(responseTemplate.MeteoDataType);
+
+        // Bind variables to meteoInstance using allKeys
         allKeys.forEach(key => bindVariable(key, meteoInstance));
-        //"enable pub-sub service"
+
+        // Enable Pub-Sub service
         const configuration = getPubSubConfiguration(meteoInstance,allKeys);
-        //
-        // console.log(configuration)
-        await installPubSub(server, {
-            configuration,
-        });
+        await installPubSub(server, { configuration });
         await server.start();
         console.log("Server started at: ", server.getEndpointUrl());
     } catch (e) {
@@ -181,25 +199,20 @@ const timeoutApi = 120000;
     }
 })();
 
+// Function to create Pub-Sub configuration
 function getPubSubConfiguration(node, keys) {
-
-    //_"create the connection"
-    const connection = createConnection();
-    // console.log(connection)
-    //_"create the published dataset";
-    const publishedDataSet = createPublishedDataSet(node,keys);
-
+    const connection = createConnection(); // Create the connection
+    const publishedDataSet = createPublishedDataSet(node, keys); // Create the published dataset
     return new PubSubConfigurationDataType({
         connections: [connection], publishedDataSets: [publishedDataSet]
     });
 }
 
+// Function to create connection for Pub-Sub
 function createConnection() {
+    const mqttEndpoint = "mqtt:localhost:1883"; // MQTT endpoint
 
-    const mqttEndpoint = "mqtt:localhost:1883";
-
-    //"create the writer group";
-    //"create the dataset writer"
+    // Create the dataset writer
     const dataSetWriter = {
         dataSetFieldContentMask: DataSetFieldContentMask.None,
         dataSetName: "PublishedDataSet1",
@@ -214,6 +227,7 @@ function createConnection() {
         },
     };
 
+    // Create the writer group
     const writerGroup = {
         dataSetWriters: [dataSetWriter],
         enabled: true,
@@ -227,6 +241,7 @@ function createConnection() {
         },
     };
 
+    // Create the connection
     const connection = new MyMqttJsonPubSubConnectionDataType({
         enabled: true, name: "Connection1", transportProfileUri: Transport.MQTT_JSON, address: {
             url: mqttEndpoint,
@@ -235,12 +250,15 @@ function createConnection() {
     return connection;
 }
 
+// Function to retrieve nested value from object using dot notation
 function getNestedValue(object, key) {
     if (object === null) {
         return undefined;
     }
     return key.split('.').reduce((o, i) => (o ? o[i] : undefined), object);
 }
+
+// Function to create published dataset
 function createPublishedDataSet(node, keys) {
     const fields = keys.map(key => {
         const nodeElement = getNestedValue(node, key);
