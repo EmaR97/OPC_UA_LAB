@@ -1,0 +1,19 @@
+{
+  "@id": "dtmi:example:Pump;1",
+  "@type": "Interface",
+  "displayName": "Pump",
+  "@context": "dtmi:dtdl:context;2",
+  "contents": [
+    {
+      "@type": "Property",
+      "name": "Status",
+      "schema": "boolean"
+    },
+    {
+      "@type": "Relationship",
+      "name": "hasFlowSensor",
+      "target": "dtmi:example:FlowSensor;1",
+      "properties": []
+    }
+  ]
+}

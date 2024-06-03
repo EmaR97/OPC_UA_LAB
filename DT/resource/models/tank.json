@@ -1,0 +1,31 @@
+{
+  "@id": "dtmi:example:Tank;1",
+  "@type": "Interface",
+  "displayName": "Tank",
+  "@context": "dtmi:dtdl:context;2",
+  "contents": [
+    {
+      "@type": "Property",
+      "name": "level",
+      "schema": "double"
+    },
+    {
+      "@type": "Relationship",
+      "name": "hasLevelSensor",
+      "target": "dtmi:example:LevelSensor;1",
+      "properties": []
+    },
+    {
+      "@type": "Relationship",
+      "name": "hasPump",
+      "target": "dtmi:example:Pump;1",
+      "properties": []
+    },
+    {
+      "@type": "Relationship",
+      "name": "hasValve",
+      "target": "dtmi:example:Valve;1",
+      "properties": []
+    }
+  ]
+}

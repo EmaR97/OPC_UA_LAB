@@ -1,0 +1,19 @@
+{
+  "@id": "dtmi:example:Valve;1",
+  "@type": "Interface",
+  "displayName": "Valve",
+  "@context": "dtmi:dtdl:context;2",
+  "contents": [
+    {
+      "@type": "Property",
+      "name": "Aperture",
+      "schema": "double"
+    },
+    {
+      "@type": "Relationship",
+      "name": "hasFlowSensor",
+      "target": "dtmi:example:FlowSensor;1",
+      "properties": []
+    }
+  ]
+}

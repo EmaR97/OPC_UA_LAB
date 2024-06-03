@@ -1,0 +1,13 @@
+{
+  "@id": "dtmi:example:FlowSensor;1",
+  "@type": "Interface",
+  "displayName": "Flow Sensor",
+  "@context": "dtmi:dtdl:context;2",
+  "contents": [
+    {
+      "@type": "Property",
+      "name": "FlowRate",
+      "schema": "double"
+    }
+  ]
+}

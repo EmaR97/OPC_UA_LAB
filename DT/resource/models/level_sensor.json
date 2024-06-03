@@ -1,0 +1,13 @@
+{
+  "@id": "dtmi:example:LevelSensor;1",
+  "@type": "Interface",
+  "displayName": "Level Sensor",
+  "@context": "dtmi:dtdl:context;2",
+  "contents": [
+    {
+      "@type": "Property",
+      "name": "Level",
+      "schema": "double"
+    }
+  ]
+}
