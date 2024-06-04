@@ -1,2 +1,4 @@
-/DT/node_modules/
-/DT/package-lock.json
+/DT/ModelDefinition/node_modules
+/DT/ModelDefinition/package-lock.json
+/OPC_UA/node_modules
+/OPC_UA/package-lock.json
